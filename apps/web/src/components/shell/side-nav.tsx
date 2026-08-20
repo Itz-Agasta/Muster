@@ -13,7 +13,7 @@ export function SideNav({ open, onToggle }: { open: boolean; onToggle: () => voi
   const pathname = usePathname();
 
   return (
-    <aside className="bg-surface-muted border-border flex min-h-0 flex-col overflow-y-auto border-r">
+    <aside className="bg-surface-muted border-border flex min-h-0 flex-col overflow-hidden border-r">
       {/*
         Collapsed, the mark and the toggle cannot share a row: together they need
         86px of a 60px column, so the toggle spills over the header beside it.
@@ -52,7 +52,18 @@ export function SideNav({ open, onToggle }: { open: boolean; onToggle: () => voi
         </button>
       </div>
 
-      <nav className={cn("flex flex-col gap-0.5", open ? "px-2.5 pt-3.5" : "px-2 pt-2.5")}>
+      {/*
+        Only the links scroll. The fleet is pinned to the bottom instead of being
+        pushed there by `mt-auto`, which put the last aircraft past the scroll
+        extent: MST-02 is the one on 12 percent, so it was the row least able to
+        afford being the one cut off.
+      */}
+      <nav
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto",
+          open ? "px-2.5 pt-3.5" : "px-2 pt-2.5",
+        )}
+      >
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (

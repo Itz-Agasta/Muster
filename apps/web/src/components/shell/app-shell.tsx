@@ -12,7 +12,7 @@ const NAV_OPEN = 220;
 const NAV_SHUT = 60;
 const RAIL_OPEN = 320;
 const RAIL_SHUT = 46;
-const STORAGE_KEY = "muster.shell.v2";
+const STORAGE_KEY = "muster.shell.v3";
 
 /**
  * Three column grid at full viewport height. The shell has a minimum width and
@@ -20,9 +20,7 @@ const STORAGE_KEY = "muster.shell.v2";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [navOpen, setNavOpen] = useState(true);
-  // The feed opens shut. A first landing should be the map: the rail is a log to
-  // reach for, and every alert in it also lands on the map itself.
-  const [railOpen, setRailOpen] = useState(false);
+  const [railOpen, setRailOpen] = useState(true);
   const [restored, setRestored] = useState(false);
 
   useSimEngine();

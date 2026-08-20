@@ -72,7 +72,9 @@ export function applyLayerMode(map: MapLibreMap, mode: LayerMode) {
   map.setLayoutProperty(PASTURE_CELLS_LAYER, "visibility", on ? "visible" : "none");
   // The status shading and the dry matter surface are two answers to the same
   // question, so only one of them is ever on the map.
-  map.setLayoutProperty("paddock-fill", "visibility", on ? "none" : "visible");
+  for (const id of ["paddock-fill", "paddock-selected-fill"]) {
+    map.setLayoutProperty(id, "visibility", on ? "none" : "visible");
+  }
   map.setPaintProperty("satellite", "raster-opacity", on ? PASTURE_DIM : 1);
   map.setLayoutProperty("paddock-label", "text-field", on ? PASTURE_LABEL : ["get", "label"]);
   map.setLayoutProperty("paddock-label", "text-line-height", on ? 1.35 : 1.2);

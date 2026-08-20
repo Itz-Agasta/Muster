@@ -67,10 +67,10 @@ export type MapPalette = {
 
 export const MAP_PALETTE: Record<"light" | "dark", MapPalette> = {
   dark: {
-    line: "rgba(255,255,255,0.48)",
+    line: "rgba(255,255,255,0.66)",
     fill: "rgba(255,255,255,0.06)",
-    selected: "#6e9172",
-    selectedFill: "rgba(126,178,124,0.16)",
+    selected: "#b9e3ac",
+    selectedFill: "rgba(150,205,140,0.20)",
     ink: "#ffffff",
     halo: "rgba(0,0,0,0.85)",
     route: "#6e9172",
@@ -82,10 +82,10 @@ export const MAP_PALETTE: Record<"light" | "dark", MapPalette> = {
     fault: "#e5484d",
   },
   light: {
-    line: "rgba(38,48,40,0.55)",
+    line: "rgba(28,38,30,0.72)",
     fill: "rgba(255,255,255,0.14)",
-    selected: "#3d5a40",
-    selectedFill: "rgba(76,110,78,0.18)",
+    selected: "#274a2b",
+    selectedFill: "rgba(58,92,60,0.22)",
     ink: "#12190f",
     halo: "rgba(255,255,255,0.9)",
     route: "#3d5a40",
@@ -153,6 +153,37 @@ export function padIcon(color: string, size = 34): ImageData {
   ctx.fillStyle = color;
   ctx.fill();
   ctx.lineWidth = size * 0.05;
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.stroke();
+
+  return ctx.getImageData(0, 0, size, size);
+}
+
+/**
+ * A chevron repeated along the route. With `symbol-placement: "line"` MapLibre
+ * resolves `icon-rotation-alignment` to `map`, so the glyph follows the bearing
+ * of the segment it lands on and the route reads as having a direction rather
+ * than just two ends.
+ */
+export function arrowIcon(color: string, size = 28): ImageData {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const c = size / 2;
+  const r = size * 0.3;
+
+  // Drawn pointing up: line placement rotates it onto the segment from there.
+  ctx.beginPath();
+  ctx.moveTo(c, c - r);
+  ctx.lineTo(c + r * 0.82, c + r * 0.7);
+  ctx.lineTo(c, c + r * 0.24);
+  ctx.lineTo(c - r * 0.82, c + r * 0.7);
+  ctx.closePath();
+
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = size * 0.07;
   ctx.strokeStyle = "rgba(0,0,0,0.5)";
   ctx.stroke();
 

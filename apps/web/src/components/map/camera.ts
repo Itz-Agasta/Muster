@@ -19,14 +19,21 @@ const reduceMotion = () =>
 
 const flyDuration = () => (reduceMotion() ? 0 : FLY_MS);
 
-export function fitToRanch(map: MapLibreMap, duration = flyDuration()) {
-  map.fitBounds(RANCH.bounds, { padding: GUTTER, duration, pitch: 34 });
-}
-
 function boundsOf(points: [number, number][]): LngLatBounds {
   const bounds = new LngLatBounds(points[0], points[0]);
   for (const p of points) bounds.extend(p);
   return bounds;
+}
+
+/**
+ * Note what is *not* passed here. `fitBounds` resets bearing to 0 when it is not
+ * given one, so the map lands north up and a reset always comes back square. The
+ * constructor's `bearing: -12` governs the pre-load frame only and never
+ * survives this call. Passing `bearing: -12` through does render the ranch on
+ * the angle, but a rotated fit needs more room and it costs about 0.3 of zoom.
+ */
+export function fitToRanch(map: MapLibreMap, duration = flyDuration()) {
+  map.fitBounds(RANCH.bounds, { padding: GUTTER, duration, pitch: 34 });
 }
 
 /**

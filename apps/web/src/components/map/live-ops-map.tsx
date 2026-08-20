@@ -68,6 +68,11 @@ export function LiveOpsMap() {
     const instance = new MapLibre({
       container: container.current,
       style: satelliteStyle(env.NEXT_PUBLIC_MAPBOX_TOKEN),
+      // These govern the pre-load frame only. `fitToRanch` runs on `load` and
+      // replaces every one of them, `bearing` included: `fitBounds` resets
+      // bearing to 0 unless handed one, so the map lands north up despite the
+      // -12 below. Measured on a 1908x928 window it settles at 69.8622/23.7788,
+      // z11.207. Do not read `zoom: 11.4` or `bearing: -12` as the default view.
       center: RANCH.centre,
       zoom: 11.4,
       pitch: 34,
@@ -129,12 +134,32 @@ export function LiveOpsMap() {
      * nav app behaves. The `originalEvent` guard is what separates a gesture from
      * the camera's own eases, which fire the same events.
      */
+    let userMoved = false;
     const release = (e: { originalEvent?: unknown }) => {
-      if (e.originalEvent && useSim.getState().following) useSim.getState().setFollowing(false);
+      if (!e.originalEvent) return;
+      userMoved = true;
+      if (useSim.getState().following) useSim.getState().setFollowing(false);
     };
     for (const ev of ["dragstart", "zoomstart", "rotatestart", "pitchstart"] as const) {
       instance.on(ev, release);
     }
+
+    /**
+     * `fitToRanch` runs once on `load`, against whatever size the canvas happens
+     * to be at that instant. On a cold start that is usually not the final size,
+     * so the ranch ends up framed for a window that no longer exists and stays
+     * there: the same build measured z11.086 on one run and z11.207 on the next.
+     * Collapsing a sidebar resizes the map too and left the fit just as stale.
+     *
+     * So re-fit whenever the canvas changes, but only while the camera still
+     * belongs to the app. Once the operator has panned it is theirs, and a
+     * sidebar toggle yanking the view back would be the worse bug.
+     */
+    instance.on("resize", () => {
+      const state = useSim.getState();
+      if (userMoved || state.following || state.phase !== "idle") return;
+      fitToRanch(instance, 0);
+    });
 
     /**
      * Per-frame values go straight into the GeoJSON sources. Subscribing
@@ -160,7 +185,10 @@ export function LiveOpsMap() {
           handedOver = false;
           frameRoute(instance, state.destinationId);
         } else if (state.phase === "complete") framePaddock(instance, state.destinationId);
-        else if (from === "flying") fitToRanch(instance);
+        else if (from === "flying") {
+          userMoved = false;
+          fitToRanch(instance);
+        }
       }
 
       // Once the run is properly under way the camera goes to the herd on its
@@ -257,7 +285,9 @@ function paint(map: MapLibreMap, state: SimSnapshot) {
   if (dronesKey !== last.drones) paintDrones(map, state);
 
   if (routeKey !== last.route && map.getLayer("paddock-selected")) {
-    map.setFilter("paddock-selected", ["==", ["get", "id"], state.destinationId]);
+    for (const id of ["paddock-selected", "paddock-selected-fill"]) {
+      map.setFilter(id, ["==", ["get", "id"], state.destinationId]);
+    }
   }
 }
 
