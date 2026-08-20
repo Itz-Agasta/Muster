@@ -125,3 +125,60 @@ export function droneIcon(color: string, size = 34): ImageData {
 
   return ctx.getImageData(0, 0, size, size);
 }
+
+/**
+ * A docked aircraft is not flying, so it does not get a heading triangle. It
+ * gets its pad: a ring with the airframe sitting in the middle of it.
+ */
+export function padIcon(color: string, size = 34): ImageData {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const c = size / 2;
+
+  // The ring carries a dark outer edge the way the triangle does, or it
+  // disappears into pale ground the moment the pad sits on sand.
+  ctx.beginPath();
+  ctx.arc(c, c, size * 0.38, 0, Math.PI * 2);
+  ctx.lineWidth = size * 0.16;
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.stroke();
+  ctx.lineWidth = size * 0.1;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(c, c, size * 0.15, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = size * 0.05;
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.stroke();
+
+  return ctx.getImageData(0, 0, size, size);
+}
+
+/**
+ * The PastureView ramp. Sequential, one hue family, never categorical: this is a
+ * magnitude. Stops are t DM/ha, spanning the range the ranch actually holds.
+ *
+ * Both ramps run dry tan to green, because that is what the country does. What
+ * changes per theme is where they sit against their own ground: light runs down
+ * into a deep green, which is Brumby's "dark where there's cover", and dark runs
+ * up into a bright one.
+ *
+ * The low end of each is a solid tan rather than something near the background.
+ * A bare paddock is the most urgent thing on this map, and at the first attempt
+ * Chhari Dhand at 1.4 t vanished into the dark ground: the map read as though
+ * nothing had been measured there, when in fact it had, and the answer was bad.
+ */
+export const PASTURE_STOPS = [0.5, 2, 3.5, 5, 6.5] as const;
+
+export const PASTURE_RAMP: Record<"light" | "dark", [string, string, string, string, string]> = {
+  dark: ["#8a7f5c", "#8f9160", "#7f9b5c", "#77a86a", "#8fc189"],
+  light: ["#c3b789", "#a8b174", "#84a05c", "#5e8449", "#37633f"],
+};
+
+/** How far the basemap drops under the pasture layer, so the ramp carries the read. */
+export const PASTURE_DIM = 0.45;

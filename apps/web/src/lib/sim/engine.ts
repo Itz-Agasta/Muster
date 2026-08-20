@@ -53,7 +53,14 @@ const WAYPOINTS: { at: number; fire: (destinationName: string) => void }[] = [
         meta: `1h 12m · saved ${inr(saved)}`,
         tone: "primary",
       });
-      useSim.setState({ phase: "complete", costSaved: useSim.getState().costSaved + saved });
+      // Arrival hands the camera back. Follow has to go with it, or the hold
+      // ease fights the settle onto the destination every six hundred ms.
+      useSim.setState({
+        phase: "complete",
+        costSaved: useSim.getState().costSaved + saved,
+        following: false,
+        layer: "satellite",
+      });
     },
   },
 ];

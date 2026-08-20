@@ -1,7 +1,7 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 
-import { PADDOCK_FEATURES } from "@/lib/data/ranch";
-import { droneIcon, type MapPalette } from "@/lib/map/style";
+import { PADDOCK_FEATURES, PADDOCK_POINTS } from "@/lib/data/ranch";
+import { droneIcon, padIcon, type MapPalette } from "@/lib/map/style";
 
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
@@ -11,9 +11,10 @@ const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: 
  * detection do the work the design calls for.
  */
 export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
-  map.addImage("drone-live", droneIcon(p.drone), { pixelRatio: 2 });
+  addDroneImages(map, p);
 
   map.addSource("paddocks", { type: "geojson", data: PADDOCK_FEATURES });
+  map.addSource("paddock-points", { type: "geojson", data: PADDOCK_POINTS });
   map.addSource("route", { type: "geojson", data: EMPTY });
   map.addSource("mob", { type: "geojson", data: EMPTY });
   map.addSource("drones", { type: "geojson", data: EMPTY });
@@ -107,13 +108,45 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
   });
 
   map.addLayer({
+    id: "paddock-label",
+    type: "symbol",
+    source: "paddock-points",
+    layout: {
+      "text-field": ["get", "label"],
+      "text-font": ["Open Sans Semibold"],
+      "text-size": 11,
+      "text-anchor": "center",
+    },
+    paint: {
+      "text-color": p.ink,
+      "text-halo-color": p.halo,
+      "text-halo-width": 1.4,
+    },
+  });
+
+  // Under the aircraft, so a selected one wears its ring rather than sits on it.
+  map.addLayer({
+    id: "drone-selected",
+    type: "circle",
+    source: "drones",
+    filter: ["==", ["get", "id"], ""],
+    paint: {
+      "circle-radius": 13,
+      "circle-color": "rgba(0,0,0,0)",
+      "circle-stroke-color": p.selected,
+      "circle-stroke-width": 1.5,
+    },
+  });
+
+  map.addLayer({
     id: "drone",
     type: "symbol",
     source: "drones",
     layout: {
-      "icon-image": "drone-live",
+      "icon-image": ["case", ["get", "airborne"], "drone-live", "drone-idle"],
       "icon-size": 0.5,
-      "icon-rotate": ["get", "heading"],
+      // A docked aircraft has no track, so it is not pointed anywhere.
+      "icon-rotate": ["case", ["get", "airborne"], ["get", "heading"], 0],
       "icon-rotation-alignment": "map",
       "icon-allow-overlap": true,
       "text-field": ["get", "id"],
@@ -127,24 +160,7 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
       "text-color": p.ink,
       "text-halo-color": p.halo,
       "text-halo-width": 1.2,
-    },
-  });
-
-  map.addLayer({
-    id: "paddock-label",
-    type: "symbol",
-    source: "paddocks",
-    layout: {
-      "text-field": ["get", "label"],
-      "text-font": ["Open Sans Semibold"],
-      "text-size": 11,
-      "text-anchor": "center",
-      "symbol-placement": "point",
-    },
-    paint: {
-      "text-color": p.ink,
-      "text-halo-color": p.halo,
-      "text-halo-width": 1.4,
+      "text-opacity": ["case", ["get", "airborne"], 1, 0.7],
     },
   });
 
@@ -152,9 +168,19 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
   animatePulse(map);
 }
 
-export function updatePalette(map: MapLibreMap, p: MapPalette) {
-  if (map.hasImage("drone-live")) map.removeImage("drone-live");
+function addDroneImages(map: MapLibreMap, p: MapPalette) {
   map.addImage("drone-live", droneIcon(p.drone), { pixelRatio: 2 });
+  // A hollow ring needs more room than a solid triangle to read at the same
+  // distance, so the pad is drawn on a larger canvas rather than scaled up by
+  // the layer: a data-driven icon-size stalls the first paint entirely.
+  map.addImage("drone-idle", padIcon(p.droneIdle, 54), { pixelRatio: 2 });
+}
+
+export function updatePalette(map: MapLibreMap, p: MapPalette) {
+  for (const id of ["drone-live", "drone-idle"]) {
+    if (map.hasImage(id)) map.removeImage(id);
+  }
+  addDroneImages(map, p);
 
   map.setPaintProperty("paddock-fill", "fill-color", p.fill);
   map.setPaintProperty("paddock-line", "line-color", p.line);
@@ -164,6 +190,7 @@ export function updatePalette(map: MapLibreMap, p: MapPalette) {
   map.setPaintProperty("mob-pulse", "circle-color", p.mob);
   map.setPaintProperty("mob-cluster", "circle-color", p.mob);
   map.setPaintProperty("mob-cluster", "circle-stroke-color", p.mobRing);
+  map.setPaintProperty("drone-selected", "circle-stroke-color", p.selected);
 
   for (const id of ["mob-count", "drone", "paddock-label"]) {
     map.setPaintProperty(id, "text-color", p.ink);
