@@ -14,7 +14,19 @@ export function SideNav({ open, onToggle }: { open: boolean; onToggle: () => voi
 
   return (
     <aside className="bg-surface-muted border-border flex min-h-0 flex-col overflow-y-auto border-r">
-      <div className="border-border flex items-center justify-between gap-2 border-b px-3.5 py-4">
+      {/*
+        Collapsed, the mark and the toggle cannot share a row: together they need
+        86px of a 60px column, so the toggle spills over the header beside it.
+        Stacked, they both sit inside the rail, the way the activity side does.
+      */}
+      <div
+        className={cn(
+          "border-border flex border-b",
+          open
+            ? "items-center justify-between gap-2 px-3.5 py-4"
+            : "flex-col items-center gap-2.5 px-2 py-3.5",
+        )}
+      >
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="bg-primary grid size-6 flex-none place-items-center rounded-md">
             <span className="bg-primary-foreground size-2 rounded-[2px]" />

@@ -12,7 +12,7 @@ const NAV_OPEN = 220;
 const NAV_SHUT = 60;
 const RAIL_OPEN = 320;
 const RAIL_SHUT = 46;
-const STORAGE_KEY = "muster.shell";
+const STORAGE_KEY = "muster.shell.v2";
 
 /**
  * Three column grid at full viewport height. The shell has a minimum width and
@@ -20,7 +20,9 @@ const STORAGE_KEY = "muster.shell";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [navOpen, setNavOpen] = useState(true);
-  const [railOpen, setRailOpen] = useState(true);
+  // The feed opens shut. A first landing should be the map: the rail is a log to
+  // reach for, and every alert in it also lands on the map itself.
+  const [railOpen, setRailOpen] = useState(false);
   const [restored, setRestored] = useState(false);
 
   useSimEngine();
@@ -34,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (typeof saved.railOpen === "boolean") setRailOpen(saved.railOpen);
       }
     } catch {
-      // A corrupt entry just means we open with both panels showing.
+      // A corrupt entry just means we open on the defaults.
     }
     setRestored(true);
   }, []);
