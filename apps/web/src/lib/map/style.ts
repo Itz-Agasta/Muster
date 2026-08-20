@@ -1,0 +1,127 @@
+import type { StyleSpecification } from "maplibre-gl";
+
+/**
+ * The basemap runs on Esri World Imagery, which needs no key, so the console
+ * works the moment it is cloned. Setting NEXT_PUBLIC_MAPBOX_TOKEN swaps it for
+ * Mapbox satellite tiles; nothing else in the map changes, because MapLibre and
+ * Mapbox GL speak the same style spec.
+ */
+const ESRI =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+
+const ESRI_ATTRIBUTION =
+  'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics';
+
+const MAPBOX_ATTRIBUTION =
+  '&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.maxar.com/">Maxar</a>';
+
+export function satelliteStyle(token?: string): StyleSpecification {
+  const useMapbox = Boolean(token);
+  const tiles = useMapbox
+    ? [`https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=${token}`]
+    : [ESRI];
+
+  return {
+    version: 8,
+    // Symbol layers need glyphs, and a raster style ships none. MapLibre's
+    // demo endpoint serves Open Sans, which is all the map labels ask for.
+    glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+    sources: {
+      satellite: {
+        type: "raster",
+        tiles,
+        tileSize: 256,
+        maxzoom: useMapbox ? 22 : 19,
+        attribution: useMapbox ? MAPBOX_ATTRIBUTION : ESRI_ATTRIBUTION,
+      },
+    },
+    layers: [{ id: "satellite", type: "raster", source: "satellite" }],
+  };
+}
+
+/**
+ * The map canvas is imagery, not chrome, so it keeps its own palette. These are
+ * sRGB rather than oklch on purpose: MapLibre parses colours itself and rejects
+ * oklch(), which silently drops the layer that used it. The values are the
+ * converted primary and danger tokens, so the map still matches the chrome.
+ *
+ * Outlines
+ * flip from white to charcoal and labels carry a halo in the opposite value so
+ * they stay legible over any tile.
+ */
+export type MapPalette = {
+  line: string;
+  fill: string;
+  selected: string;
+  selectedFill: string;
+  ink: string;
+  halo: string;
+  route: string;
+  routeHalo: string;
+  mob: string;
+  mobRing: string;
+  drone: string;
+  droneIdle: string;
+  fault: string;
+};
+
+export const MAP_PALETTE: Record<"light" | "dark", MapPalette> = {
+  dark: {
+    line: "rgba(255,255,255,0.48)",
+    fill: "rgba(255,255,255,0.06)",
+    selected: "#6e9172",
+    selectedFill: "rgba(126,178,124,0.16)",
+    ink: "#ffffff",
+    halo: "rgba(0,0,0,0.85)",
+    route: "#6e9172",
+    routeHalo: "rgba(0,0,0,0.45)",
+    mob: "rgba(255,255,255,0.22)",
+    mobRing: "rgba(255,255,255,0.82)",
+    drone: "#6e9172",
+    droneIdle: "rgba(255,255,255,0.55)",
+    fault: "#e5484d",
+  },
+  light: {
+    line: "rgba(38,48,40,0.55)",
+    fill: "rgba(255,255,255,0.14)",
+    selected: "#3d5a40",
+    selectedFill: "rgba(76,110,78,0.18)",
+    ink: "#12190f",
+    halo: "rgba(255,255,255,0.9)",
+    route: "#3d5a40",
+    routeHalo: "rgba(255,255,255,0.7)",
+    mob: "rgba(255,255,255,0.5)",
+    mobRing: "#293729",
+    drone: "#3d5a40",
+    droneIdle: "rgba(30,40,32,0.6)",
+    fault: "#9d392e",
+  },
+};
+
+/**
+ * A 17px directional triangle drawn to a canvas once and registered as a map
+ * image, so the drone layer can rotate it to heading on the GPU.
+ */
+export function droneIcon(color: string, size = 34): ImageData {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const c = size / 2;
+  const r = size * 0.42;
+
+  ctx.beginPath();
+  ctx.moveTo(c, c - r);
+  ctx.lineTo(c + r * 0.62, c + r * 0.72);
+  ctx.lineTo(c, c + r * 0.34);
+  ctx.lineTo(c - r * 0.62, c + r * 0.72);
+  ctx.closePath();
+
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = size * 0.055;
+  ctx.strokeStyle = "rgba(0,0,0,0.55)";
+  ctx.stroke();
+
+  return ctx.getImageData(0, 0, size, size);
+}
