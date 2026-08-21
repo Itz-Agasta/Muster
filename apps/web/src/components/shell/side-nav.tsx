@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@Muster/ui/lib/utils";
 
+import { BrandMark } from "./brand-mark";
 import { FleetList } from "./fleet-list";
 import { NAV_ITEMS } from "./nav-items";
 
@@ -28,9 +29,7 @@ export function SideNav({ open, onToggle }: { open: boolean; onToggle: () => voi
         )}
       >
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="bg-primary grid size-6 flex-none place-items-center rounded-md">
-            <span className="bg-primary-foreground size-2 rounded-[2px]" />
-          </span>
+          <BrandMark className="text-primary size-6 flex-none" />
           {open && (
             <span className="min-w-0">
               <span className="wordmark text-foreground block truncate text-[0.97rem] leading-tight">

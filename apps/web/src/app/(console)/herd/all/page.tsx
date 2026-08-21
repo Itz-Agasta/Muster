@@ -2,7 +2,6 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 import { HERD_STATS } from "@/lib/data/herd";
-import { num } from "@/lib/format";
 
 /**
  * The one place the console admits what it is. Everything else on screen is
@@ -20,10 +19,7 @@ export default function Page() {
         </h1>
 
         <p className="text-muted-foreground text-[12.5px] leading-[1.6]">
-          All {num(HERD_STATS.total)} head are real records in this build, and the charts on the
-          previous screen are drawn from every one of them. A paginated register of the other{" "}
-          {num(HERD_STATS.healthy)} healthy animals was not the part worth building first, and
-          honestly, what were you expecting?
+          Dude you are really expecting me to build everything for a demo?
         </p>
 
         <p className="text-muted-foreground text-[12.5px] leading-[1.6]">

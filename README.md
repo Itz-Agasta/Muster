@@ -1,98 +1,85 @@
 # Muster
 
-## Features
+An operations console for an autonomous drone fleet that musters cattle.
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Oxlint** - Oxlint + Oxfmt (linting & formatting)
+Press **Move mob** and watch a real muster run: 418 head walk their route across the Banni Grasslands, two aircraft work the mob, the camera picks up the lead drone, the basemap switches to measured pasture cover, and you can open the aircraft's own down camera without leaving the map.
 
-## Getting Started
-
-First, install the dependencies:
+Live Ops runs on port **3001**.
 
 ```bash
 pnpm install
+pnpm dev:web
 ```
 
-Then, run the development server:
+## What this is
 
-```bash
-pnpm run dev
-```
+A build of [Brumby](https://brumby.com)'s product surface. Brumby flies drones that muster cattle, count head, measure pasture biomass and inspect water and fences. There is no drone here, so the console has to carry the whole product story by itself.
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
+That makes it a **simulation, not a dashboard shell**. Nothing is a static mockup. The mob genuinely walks its route on a per frame tick, batteries genuinely drain, alerts genuinely fire at waypoints, and every instrument on screen reads from the same store. If two panels quote an altitude, they quote the same one, because they read the same function.
 
-## UI Customization
+## Setting
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components like this:
-
-```tsx
-import { Button } from "@Muster/ui/components/button";
-```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Deployment
-
-### Vercel Services
-
-- Target: web
-- Config: `vercel.json`
-- Link the project first: pnpm run deploy:setup
-- Local Vercel dev: pnpm run dev:vercel
-- Sync preview env: pnpm run env:preview
-- Sync production env: pnpm run env:production
-- Dry-run check (no upload): pnpm run deploy:check
-- Preview deploy: pnpm run deploy
-- Production deploy: pnpm run deploy:prod
-  Vercel Services share project environment variables, but deploys do not upload local `.env` files automatically. Link the project with `vercel link`, then run the env sync command before your first deploy (otherwise the deployment starts with no env vars), or pass one-off envs with `vercel deploy -e KEY=value`.
-  Pass Vercel CLI flags to the env sync command directly, for example: `pnpm run env:production --scope your-team`.
-
-For more details, see the guide on [Deploying to Vercel](https://www.better-t-stack.dev/docs/guides/vercel).
-
-## Git Hooks and Formatting
-
-- Run checks: `pnpm run check`
-
-## Project Structure
+[**Banni Grasslands, Kutch, Gujarat.**](https://en.wikipedia.org/wiki/Banni_Grasslands_Reserve) A real place: the largest grassland in Asia, worked by Maldhari pastoralists running Kankrej cattle and Banni buffalo on rotational grazing.
 
 ```
-Muster/
-├── apps/
-│   ├── web/         # Frontend application (Next.js)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
+Operation   Rann Pastoral Co-operative, Banni
+Centre      23.7841 N, 69.8213 E   IST   IMD Bhuj for weather
+Paddocks    Bhirandiyara, Dhordo North, Hodka Flat,
+            Ludiya Ridge, Sarada Bet, Chhari Dhand
+Herd        2,270 head
+Tags        INAPH 12 digit ear tags, IN 356 000 004471, shown as KJ-4471
+Units       kg, hectares, mm, kt, m AGL
+Currency    rupees with en-IN grouping, so 2,48,61,000 and not 24,861,000
+Aircraft    MST-04 Baaz, MST-07 Saras, MST-11 Koel, MST-02 Cheel
 ```
 
-## Available Scripts
+Brumby's operational vocabulary stays as it is, so paddock, mob, muster, bore,
+head and draft are all used the way the product uses them. Everything else is
+local. One module, `lib/format.ts`, owns every unit and locale decision.
 
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run check`: Run Oxlint and Oxfmt
-- `pnpm run deploy:setup`: Link this repo to a Vercel project (first-time setup)
-- `pnpm run dev:vercel`: Run the Vercel Services dev environment locally
-- `pnpm run env:preview`: Sync local env files to the Vercel preview environment
-- `pnpm run env:production`: Sync local env files to the Vercel production environment
-- `pnpm run deploy`: Create a Vercel preview deployment
-- `pnpm run deploy:prod`: Deploy to Vercel production
-- `pnpm run deploy:check`: Dry-run a deploy to preview framework detection and included files without uploading
+## Screens
+
+| Screen                | Route        | What it answers                               |
+| --------------------- | ------------ | --------------------------------------------- |
+| Live Ops Map          | `/ops`       | Where is the mob, and what is the fleet doing |
+| Herd Health           | `/herd`      | How do you know that animal is sick           |
+| Ranch Analytics       | `/analytics` | What has this saved                           |
+| Missions              | `/missions`  | What has been flown                           |
+| Paddocks              | `/paddocks`  | What is the feed doing                        |
+| Fleet and Maintenance | `/fleet`     | What is airworthy                             |
+
+The first three are built deep. The last three carry real fixture data and are deliberately static (cuz i felt lazy).
+
+## Stack
+
+Next.js 16 and React 19 on Turbopack, Tailwind v4, shadcn on `@base-ui/react`, Zustand plus one rAF loop for the simulation, MapLibre GL for the map, Turf subpackages for the geo maths, `motion` and `@number-flow/react` for motion, Oxlint and Oxfmt.
+
+## Layout
+
+```
+apps/web/src/
+  app/(console)/     ops, herd, analytics, missions, paddocks, fleet
+  components/        shell, map, herd, analytics, shared
+  lib/
+    format.ts        every unit and locale decision
+    data/            Banni fixtures
+    sim/             store, the rAF loop, route, the clip pool
+    map/style.ts     sRGB map palette and satellite style
+    chart/palette.ts validated status colours
+packages/
+  ui/                shared shadcn primitives and design tokens
+  env/               typed environment schema
+apps/web/public/pov/ six encoded down camera clips
+```
+
+Files stay under 300 to 500 lines. Past that they get split.
+
+## Configuration
+
+Everything runs with no keys. The map falls back to Esri World Imagery.
+
+Set `NEXT_PUBLIC_MAPBOX_TOKEN` in `apps/web/.env` to swap the basemap over to Mapbox satellite.
+
+## Credits
+
+Down camera footage from [Pexels](https://www.pexels.com), free for commercial use with no attribution required, graded and cut to match Banni. Satellite imagery from Esri World Imagery or Mapbox depending on configuration. [Brumby](https://brumby.com/) is a real company and this is an unaffiliated build of their product surface.
