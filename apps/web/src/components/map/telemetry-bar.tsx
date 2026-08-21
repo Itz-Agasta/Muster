@@ -1,5 +1,6 @@
 "use client";
 
+import { CRUISE_AGL, wobble } from "@/lib/sim/instruments";
 import { useSim } from "@/lib/sim/store";
 import { cn } from "@Muster/ui/lib/utils";
 
@@ -20,36 +21,35 @@ export function TelemetryBar() {
   const following = useSim((s) => s.following);
   const setFollowing = useSim((s) => s.setFollowing);
 
+  // Shared with the POV HUD so the two panels never quote different numbers.
+  const wob = (base: number, spread: number, offset: number) => wobble(tick, base, spread, offset);
+
   const lead = drones.find((d) => d.id === selectedDroneId);
   if (!lead) return null;
-
-  // Instruments wander inside plausible bands rather than sitting frozen.
-  const wobble = (base: number, spread: number, offset: number) =>
-    Math.round(base + Math.sin((tick + offset) * 0.7) * spread);
 
   // A docked aircraft is on the pad with its rotors stopped, so it reads zeros
   // rather than a cruise it is not flying.
   const cells = lead.airborne
     ? [
-        { k: "Altitude", v: String(wobble(126, 4, 0)), u: "m AGL" },
+        { k: "Altitude", v: String(wob(CRUISE_AGL, 4, 0)), u: "m AGL" },
         { k: "Battery", v: String(Math.round(lead.battery)), u: "%" },
-        { k: "Ground spd", v: String(wobble(24, 3, 2)), u: "kt" },
+        { k: "Ground spd", v: String(wob(24, 3, 2)), u: "kt" },
         {
           k: "Heading",
           v: String(Math.round((lead.heading + 360) % 360)).padStart(3, "0"),
           u: "deg",
         },
-        { k: "Wind", v: String(wobble(14, 2, 4)), u: "kt NNE" },
-        { k: "Link", v: String(wobble(-63, 4, 6)), u: "dBm" },
-        { k: "GPS", v: String(wobble(19, 1, 8)), u: "sats" },
+        { k: "Wind", v: String(wob(14, 2, 4)), u: "kt NNE" },
+        { k: "Link", v: String(wob(-63, 4, 6)), u: "dBm" },
+        { k: "GPS", v: String(wob(19, 1, 8)), u: "sats" },
       ]
     : [
         { k: "Altitude", v: "0", u: "m AGL" },
         { k: "Battery", v: String(Math.round(lead.battery)), u: "%" },
         { k: "State", v: "Charging", u: "" },
-        { k: "Wind", v: String(wobble(14, 2, 4)), u: "kt NNE" },
-        { k: "Link", v: String(wobble(-41, 2, 6)), u: "dBm" },
-        { k: "GPS", v: String(wobble(21, 1, 8)), u: "sats" },
+        { k: "Wind", v: String(wob(14, 2, 4)), u: "kt NNE" },
+        { k: "Link", v: String(wob(-41, 2, 6)), u: "dBm" },
+        { k: "GPS", v: String(wob(21, 1, 8)), u: "sats" },
       ];
 
   return (
