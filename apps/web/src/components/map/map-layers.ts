@@ -1,7 +1,7 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 
-import { PADDOCK_FEATURES } from "@/lib/data/ranch";
-import { droneIcon, type MapPalette } from "@/lib/map/style";
+import { PADDOCK_FEATURES, PADDOCK_POINTS } from "@/lib/data/ranch";
+import { arrowIcon, droneIcon, padIcon, type MapPalette } from "@/lib/map/style";
 
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
@@ -11,9 +11,10 @@ const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: 
  * detection do the work the design calls for.
  */
 export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
-  map.addImage("drone-live", droneIcon(p.drone), { pixelRatio: 2 });
+  addMapImages(map, p);
 
   map.addSource("paddocks", { type: "geojson", data: PADDOCK_FEATURES });
+  map.addSource("paddock-points", { type: "geojson", data: PADDOCK_POINTS });
   map.addSource("route", { type: "geojson", data: EMPTY });
   map.addSource("mob", { type: "geojson", data: EMPTY });
   map.addSource("drones", { type: "geojson", data: EMPTY });
@@ -29,11 +30,21 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
     },
   });
 
+  // The destination of the pending muster, tinted. The panel names it in text;
+  // without this the map gives no answer to "which one is Sarada Bet".
+  map.addLayer({
+    id: "paddock-selected-fill",
+    type: "fill",
+    source: "paddocks",
+    filter: ["==", ["get", "id"], ""],
+    paint: { "fill-color": p.selectedFill },
+  });
+
   map.addLayer({
     id: "paddock-line",
     type: "line",
     source: "paddocks",
-    paint: { "line-color": p.line, "line-width": 1 },
+    paint: { "line-color": p.line, "line-width": 1.4 },
   });
 
   map.addLayer({
@@ -41,7 +52,7 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
     type: "line",
     source: "paddocks",
     filter: ["==", ["get", "id"], ""],
-    paint: { "line-color": p.selected, "line-width": 2 },
+    paint: { "line-color": p.selected, "line-width": 2.4 },
   });
 
   map.addLayer({
@@ -62,6 +73,27 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
       "line-width": 2,
       "line-dasharray": [2, 2],
       "line-opacity": ["case", ["to-boolean", ["get", "committed"]], 1, 0.5],
+    },
+  });
+
+  // Direction of travel, and only once the muster is committed. Filtering rather
+  // than fading it: an idle console should be calm, and the chevrons marching
+  // along a route nobody has agreed to yet read as something already happening.
+  // Pitch alignment stays on the viewport so the chevron reads face-on rather
+  // than lying foreshortened on a 34 degree ground plane.
+  map.addLayer({
+    id: "route-arrow",
+    type: "symbol",
+    source: "route",
+    filter: ["to-boolean", ["get", "committed"]],
+    layout: {
+      "symbol-placement": "line",
+      "symbol-spacing": 92,
+      "icon-image": "route-arrow",
+      "icon-size": 1,
+      "icon-pitch-alignment": "viewport",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
     },
   });
 
@@ -98,30 +130,7 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
       "text-font": ["Noto Sans Regular"],
       "text-size": 10,
       "text-allow-overlap": true,
-    },
-    paint: {
-      "text-color": p.ink,
-      "text-halo-color": p.halo,
-      "text-halo-width": 1.2,
-    },
-  });
-
-  map.addLayer({
-    id: "drone",
-    type: "symbol",
-    source: "drones",
-    layout: {
-      "icon-image": "drone-live",
-      "icon-size": 0.5,
-      "icon-rotate": ["get", "heading"],
-      "icon-rotation-alignment": "map",
-      "icon-allow-overlap": true,
-      "text-field": ["get", "id"],
-      "text-font": ["Noto Sans Regular"],
-      "text-size": 9,
-      "text-offset": [0, 1.4],
-      "text-anchor": "top",
-      "text-allow-overlap": true,
+      "text-ignore-placement": true,
     },
     paint: {
       "text-color": p.ink,
@@ -133,13 +142,16 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
   map.addLayer({
     id: "paddock-label",
     type: "symbol",
-    source: "paddocks",
+    source: "paddock-points",
     layout: {
       "text-field": ["get", "label"],
       "text-font": ["Open Sans Semibold"],
       "text-size": 11,
-      "text-anchor": "center",
-      "symbol-placement": "point",
+      // Lifted off the centroid: the mob cluster parks there and carries
+      // `text-allow-overlap`, so a centred label loses to it and the source
+      // paddock of the pending muster ends up the one thing with no name.
+      "text-anchor": "bottom",
+      "text-offset": [0, -1.1],
     },
     paint: {
       "text-color": p.ink,
@@ -148,22 +160,77 @@ export function addOverlayLayers(map: MapLibreMap, p: MapPalette) {
     },
   });
 
+  // Under the aircraft, so a selected one wears its ring rather than sits on it.
+  map.addLayer({
+    id: "drone-selected",
+    type: "circle",
+    source: "drones",
+    filter: ["==", ["get", "id"], ""],
+    paint: {
+      "circle-radius": 13,
+      "circle-color": "rgba(0,0,0,0)",
+      "circle-stroke-color": p.selected,
+      "circle-stroke-width": 1.5,
+    },
+  });
+
+  map.addLayer({
+    id: "drone",
+    type: "symbol",
+    source: "drones",
+    layout: {
+      "icon-image": ["case", ["get", "airborne"], "drone-live", "drone-idle"],
+      "icon-size": 0.5,
+      // A docked aircraft has no track, so it is not pointed anywhere.
+      "icon-rotate": ["case", ["get", "airborne"], ["get", "heading"], 0],
+      "icon-rotation-alignment": "map",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "text-field": ["get", "id"],
+      "text-font": ["Noto Sans Regular"],
+      "text-size": 9,
+      "text-offset": [0, 1.4],
+      "text-anchor": "top",
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: {
+      "text-color": p.ink,
+      "text-halo-color": p.halo,
+      "text-halo-width": 1.2,
+      "text-opacity": ["case", ["get", "airborne"], 1, 0.7],
+    },
+  });
+
   animateDash(map);
   animatePulse(map);
 }
 
-export function updatePalette(map: MapLibreMap, p: MapPalette) {
-  if (map.hasImage("drone-live")) map.removeImage("drone-live");
+function addMapImages(map: MapLibreMap, p: MapPalette) {
   map.addImage("drone-live", droneIcon(p.drone), { pixelRatio: 2 });
+  // A hollow ring needs more room than a solid triangle to read at the same
+  // distance, so the pad is drawn on a larger canvas rather than scaled up by
+  // the layer: a data-driven icon-size stalls the first paint entirely.
+  map.addImage("drone-idle", padIcon(p.droneIdle, 54), { pixelRatio: 2 });
+  map.addImage("route-arrow", arrowIcon(p.selected, 32), { pixelRatio: 2 });
+}
+
+export function updatePalette(map: MapLibreMap, p: MapPalette) {
+  for (const id of ["drone-live", "drone-idle", "route-arrow"]) {
+    if (map.hasImage(id)) map.removeImage(id);
+  }
+  addMapImages(map, p);
 
   map.setPaintProperty("paddock-fill", "fill-color", p.fill);
   map.setPaintProperty("paddock-line", "line-color", p.line);
   map.setPaintProperty("paddock-selected", "line-color", p.selected);
+  map.setPaintProperty("paddock-selected-fill", "fill-color", p.selectedFill);
   map.setPaintProperty("route-halo", "line-color", p.routeHalo);
   map.setPaintProperty("route-dash", "line-color", p.route);
   map.setPaintProperty("mob-pulse", "circle-color", p.mob);
   map.setPaintProperty("mob-cluster", "circle-color", p.mob);
   map.setPaintProperty("mob-cluster", "circle-stroke-color", p.mobRing);
+  map.setPaintProperty("drone-selected", "circle-stroke-color", p.selected);
 
   for (const id of ["mob-count", "drone", "paddock-label"]) {
     map.setPaintProperty(id, "text-color", p.ink);

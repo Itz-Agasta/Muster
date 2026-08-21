@@ -8,7 +8,7 @@ export function FleetList() {
   const drones = useSim((s) => s.drones);
 
   return (
-    <div className="border-border mt-auto border-t px-4 pt-3.5 pb-4">
+    <div className="border-border flex-none border-t px-4 pt-3.5 pb-4">
       <p className="field-label pb-2.5">Fleet</p>
       <ul className="flex flex-col gap-3">
         {drones.map((d) => {

@@ -14,6 +14,10 @@ export const RANCH = {
     [69.96, 23.88],
   ] as [[number, number], [number, number]],
   weatherSource: "IMD Bhuj",
+  /** The pad and the office. Sits clear of every paddock ring, south of the run. */
+  homestead: [69.8047, 23.7519] as [number, number],
+  /** Cover the co-op rotates on, t DM/ha. PastureView flags a paddock against it. */
+  targetCover: 4.5,
   headTotal: 2270,
   operator: { name: "A. Chakraborty", initials: "AC" },
 } as const;
@@ -138,6 +142,21 @@ export const ACTIVE_MOB = {
 } as const;
 
 export const DESTINATION_IDS = ["sarada-bet", "dhordo-north", "chhari-dhand"] as const;
+
+/**
+ * Labels ride on their own point source. Drawn from the polygons, a paddock that
+ * straddles a tile boundary is split into two pieces and MapLibre labels each of
+ * them, so the name appears twice the moment the operator zooms in.
+ */
+export const PADDOCK_POINTS = {
+  type: "FeatureCollection" as const,
+  features: PADDOCKS.map((p) => ({
+    type: "Feature" as const,
+    id: p.id,
+    properties: { id: p.id, label: p.name, dryMatter: p.dryMatter },
+    geometry: { type: "Point" as const, coordinates: [p.centre[0], p.centre[1]] },
+  })),
+};
 
 export const PADDOCK_FEATURES = {
   type: "FeatureCollection" as const,

@@ -12,7 +12,7 @@ const NAV_OPEN = 220;
 const NAV_SHUT = 60;
 const RAIL_OPEN = 320;
 const RAIL_SHUT = 46;
-const STORAGE_KEY = "muster.shell";
+const STORAGE_KEY = "muster.shell.v3";
 
 /**
  * Three column grid at full viewport height. The shell has a minimum width and
@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (typeof saved.railOpen === "boolean") setRailOpen(saved.railOpen);
       }
     } catch {
-      // A corrupt entry just means we open with both panels showing.
+      // A corrupt entry just means we open on the defaults.
     }
     setRestored(true);
   }, []);
