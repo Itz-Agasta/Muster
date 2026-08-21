@@ -2,6 +2,7 @@ import { CommandPanel } from "@/components/map/command-panel";
 import { LayerBar } from "@/components/map/layer-bar";
 import { MapCanvas } from "@/components/map/map-canvas";
 import { PastureReadout } from "@/components/map/pasture-readout";
+import { PovPanel } from "@/components/map/pov-panel";
 import { TelemetryBar } from "@/components/map/telemetry-bar";
 
 export default function Page() {
@@ -15,6 +16,7 @@ export default function Page() {
         <PastureReadout />
       </div>
       <CommandPanel />
+      <PovPanel />
       <TelemetryBar />
     </section>
   );
