@@ -64,17 +64,16 @@ Brumby's operational vocabulary stays as it is, so paddock, mob, muster, bore, h
 
 ## Screens
 
-| Screen | Route | What it answers |
-| --- | --- | --- |
-| Live Ops Map | `/ops` | Where is the mob, and what is the fleet doing |
-| Herd Health | `/herd` | How do you know that animal is sick |
-| Ranch Analytics | `/analytics` | What has this saved |
-| Missions | `/missions` | What has been flown |
-| Paddocks | `/paddocks` | What is the feed doing |
-| Fleet and Maintenance | `/fleet` | What is airworthy |
+| Screen                | Route        | What it answers                               |
+| --------------------- | ------------ | --------------------------------------------- |
+| Live Ops Map          | `/ops`       | Where is the mob, and what is the fleet doing |
+| Herd Health           | `/herd`      | How do you know that animal is sick           |
+| Ranch Analytics       | `/analytics` | What has this saved                           |
+| Missions              | `/missions`  | What has been flown                           |
+| Paddocks              | `/paddocks`  | What is the feed doing                        |
+| Fleet and Maintenance | `/fleet`     | What is airworthy                             |
 
 The first three are built deep. The last three carry real fixture data and are deliberately static (cuz i felt lazy).
-
 
 ## Stack
 

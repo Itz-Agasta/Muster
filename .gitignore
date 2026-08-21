@@ -28,6 +28,11 @@ local.db-*
 *.swo
 *~
 .DS_Store
+.agents/skills/
+.claude/skills/
+.claude/settings.local.json
+.mcp.json
+skills-lock.json
 
 # Logs
 logs
@@ -56,6 +61,3 @@ coverage
 .cache
 tmp
 temp
-
-# Raw drone POV source footage. Encoded clips live in apps/web/public/pov.
-footage/
